@@ -7,6 +7,7 @@ python circle-fit.py
 
 #+RESULTS:
 #+begin_example
+### Simple Test
       fun: 9.093083936160763e-14
  hess_inv: array([[  1.00000000e+00,   1.65985682e-05],
        [  1.65985682e-05,   1.25826685e+00]])
@@ -18,6 +19,23 @@ python circle-fit.py
    status: 0
   success: True
         x: array([ 2.50000006,  0.49999954])
+### Image Test
+      fun: 34.9231669910252
+ hess_inv: array([[ 0.58523265, -0.51146814],
+       [-0.51146814,  0.63004562]])
+      jac: array([ -1.43051147e-06,   9.53674316e-07])
+  message: 'Optimization terminated successfully.'
+     nfev: 76
+      nit: 14
+     njev: 19
+   status: 0
+  success: True
+        x: array([ 351.25438744,  716.88477617])
+Star position: (315.1670298243821, 783.6334060361919)
+Center position: [ 351.25438744  716.88477617]
+Radius of curvature: 95.955784237
+Axis unit vector: [-0.4755886   0.87966783]
+Apex distance: 20.0764262514
 #+end_example
 
 ** History
