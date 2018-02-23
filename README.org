@@ -1,0 +1,8 @@
+* circle-fit
+Fit circle to set of points. Find radius of curvature. Find planitude and alatude with respect to another point.
+** History
++ Initial motivation [2018-02-22 Thu]
+  + This is based on earlier programs such as ~find-xy-shell.py~ and ~fit-circle-shell.py~
+  + It is a ground-up rewrite to make sure that the description in Appendix E of the "Bow shock shapes" paper is actually correct
+  + We will take the opportunity to make it more general
+  + And use the new astropy-affiliated ~regions~ package
