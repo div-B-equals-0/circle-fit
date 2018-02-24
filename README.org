@@ -20,23 +20,18 @@ python circle-fit.py
   success: True
         x: array([ 2.50000006,  0.49999954])
 ### Image Test
-      fun: 49.32233767541073
- hess_inv: array([[ 0.98175177, -0.76199442],
-       [-0.76199442,  0.81240084]])
-      jac: array([  2.38418579e-06,   4.76837158e-06])
+      fun: 9.093083936160763e-14
+ hess_inv: array([[  1.00000000e+00,   1.65985682e-05],
+       [  1.65985682e-05,   1.25826685e+00]])
+      jac: array([  2.60532386e-07,  -3.61247888e-07])
   message: 'Optimization terminated successfully.'
-     nfev: 64
-      nit: 14
-     njev: 16
+     nfev: 20
+      nit: 4
+     njev: 5
    status: 0
   success: True
-        x: array([ 343.80297433,  729.22269297])
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 343.80297433  729.22269297]
-Radius of curvature: 75.4959571496
-Axis unit vector: [-0.46573022  0.88492675]
-Apex distance: 14.0098366536
-Figure file: plot-w000-400-inner.pdf
+        x: array([ 2.50000006,  0.49999954])
+Figure file: plot-w000-400-ridge.pdf
 #+end_example
 
 #+BEGIN_SRC sh

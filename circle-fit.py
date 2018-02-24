@@ -10,6 +10,7 @@ import regions as rg
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
+from astropy.convolution import Gaussian2DKernel, convolve_fft
 from matplotlib import pyplot as plt
 import matplotlib.patches
 import seaborn as sns
@@ -107,6 +108,40 @@ def apex_distance(r0, rc, Rc, uvec):
     return np.hypot(*R0)
 
 
+def find_theta(x, y, x0, y0, uvec):
+    """
+    Find angle in degrees of all points (`x`, `y`) from the axis
+    `uvec`, measured around the point (`x0`, `y0`)
+
+    According to need, (x0, y0) can either be the star or the center
+    of curvature,
+    """
+    dot_product = (x - x0)*uvec[0] + (y - y0)*uvec[1]
+    length = np.hypot(x - x0, y - y0)
+    theta = np.arccos(dot_product/length)
+    return np.degrees(theta)
+
+
+class FittedCircle(object):
+    def __init__(self, x, y, xs, ys, verbose=False):
+        self.x = x
+        self.y = y
+        self.xs = xs
+        self.ys = ys
+        self.verbose = verbose
+        self.results = fit_circle_to_xy(self.x, self.y)
+        if self.verbose:
+            print(results)
+        self.r0 = self.xs, self.ys
+        self.rc = self.results.x
+        self.Rc = mean_radius(self.x, self.y, *self.results.x)
+        self.xihat = axis_unit_vector(self.r0, self.rc)
+        self.R0 = apex_distance(self.r0, self.rc, self.Rc, self.xihat)
+        self.theta = find_theta(self.x, self.y, self.xs, self.ys, self.xihat)
+        self.theta_c = find_theta(self.x, self.y, self.rc[0], self.rc[1], self.xihat)
+        
+
+
 def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
     # Find WCS transformation from FITS image header
     hdu, = fits.open(fits_filename)
@@ -116,35 +151,32 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
     ax.imshow(hdu.data, origin='lower', vmin=2.8, vmax=3.5, cmap='viridis')
 
     xs, ys, x, y = get_arc_xy(region_filename, fits_filename)
-    results = fit_circle_to_xy(x, y)
-    if verbose:
-        print(results)
+    c = FittedCircle(x, y, xs, ys, verbose=True)
 
     # Size of viewport
     size = 150
     x1, x2 = xs - size, xs + size
     y1, y2 = ys - size, ys + size
-    ax.contour(hdu.data,
-               levels=np.linspace(2.8, 3.5, 7),
-               linewidths=0.5)
+    
+    # Contour of a smoothed version
+    ax.contour(
+        convolve_fft(hdu.data, Gaussian2DKernel(stddev=2)),
+        levels=np.linspace(2.8, 3.5, 15),
+        linewidths=0.5)
 
-    r0 = xs, ys
-    rc = results.x
-    Rc = mean_radius(x, y, *results.x)
-    xihat = axis_unit_vector(r0, rc)
-    R0 = apex_distance(r0, rc, Rc, xihat)
-    if verbose:
-        print("Star position:", r0)
-        print("Center position:", rc)
-        print("Radius of curvature:", Rc)
-        print("Axis unit vector:", xihat)
-        print("Apex distance:", R0)
 
-    ax.scatter(x, y, s=50, color='r')
-    circle = matplotlib.patches.Circle(rc, radius=Rc, ec='k', fc='none')
+    m = np.abs(c.theta_c) <= 30.0
+    ax.scatter(x[m], y[m], s=30, color='r', zorder=2)
+    ax.scatter(x[~m], y[~m], s=15, color='w', zorder=2)
+    circle = matplotlib.patches.Circle(c.rc, radius=c.Rc, ec='k', fc='none')
     ax.add_patch(circle)
-    ax.scatter(rc[0], rc[1], color='k')
-    ax.scatter(xs, ys, s=50, color='k')
+    ax.plot(
+        [c.rc[0], c.rc[0] + 1.2*c.Rc*c.xihat[0]],
+        [c.rc[1], c.rc[1] + 1.2*c.Rc*c.xihat[1]],
+        ls="--", color='w', zorder=1,
+    )
+    ax.scatter(c.rc[0], c.rc[1], s=30, color='k', zorder=2)
+    ax.scatter(xs, ys, s=30, color='k', zorder=2)
 
     ra, dec = ax.coords
     ra.set_major_formatter('hh:mm:ss.ss')
@@ -163,9 +195,9 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
 TESTDATA = np.array([1, 2, 3, 4]), np.array([1, 2, 2, 1])
 TESTCENTER = np.array([2.5, 0.5])
 
-TEST_REGION_FILE = "data/new-w000-400-inner.reg"
+TEST_REGION_FILE = "data/new-w000-400-ridge.reg"
 TEST_FITS_FILE = "data/w000-400-Bally_09-extract.fits"
-TEST_PLOT_FILE = 'plot-w000-400-inner.pdf'
+TEST_PLOT_FILE = 'plot-w000-400-ridge.pdf'
 
 if __name__ == "__main__":
 
