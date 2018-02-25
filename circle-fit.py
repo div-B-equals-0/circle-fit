@@ -116,9 +116,10 @@ def find_theta(x, y, x0, y0, uvec):
     According to need, (x0, y0) can either be the star or the center
     of curvature,
     """
-    dot_product = (x - x0)*uvec[0] + (y - y0)*uvec[1]
-    length = np.hypot(x - x0, y - y0)
-    theta = np.arccos(dot_product/length)
+    xy = np.stack((x - x0, y - y0), axis=-1)
+    R_cos_theta = np.dot(xy, uvec)
+    R_sin_theta = np.cross(xy, uvec)
+    theta = np.arctan2(R_sin_theta, R_cos_theta)
     return np.degrees(theta)
 
 
@@ -144,13 +145,16 @@ class FittedCircle(object):
         # Calculate the theta values for all points, regardless of the mask
         self.theta = find_theta(self.x, self.y, self.xs, self.ys, self.xihat)
         self.theta_c = find_theta(self.x, self.y, self.rc[0], self.rc[1], self.xihat)
+        # Find the R(theta)
+        self.R = np.hypot(self.x - self.xs, self.y - self.ys)
+        # Find sort order of theta increasing
+        order = np.argsort(self.theta)
+        self.R90 = np.interp([-90.0, 90.0], self.theta[order], self.R[order])
         if self.verbose:
             print(self.results.message)
-            print("  Star position:", self.r0)
-            print("  Center position:", self.rc)
-            print("  Radius of curvature:", self.Rc)
-            print("  Axis unit vector:", self.xihat)
             print("  Apex distance:", self.R0)
+            print("  Radius of curvature:", self.Rc)
+            print("  Perpendicular radius (+/-):", self.R90)
         
 
 
