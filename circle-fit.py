@@ -146,11 +146,11 @@ class FittedCircle(object):
         self.theta_c = find_theta(self.x, self.y, self.rc[0], self.rc[1], self.xihat)
         if self.verbose:
             print(self.results.message)
-            print("Star position:", self.r0)
-            print("Center position:", self.rc)
-            print("Radius of curvature:", self.Rc)
-            print("Axis unit vector:", self.xihat)
-            print("Apex distance:", self.R0)
+            print("  Star position:", self.r0)
+            print("  Center position:", self.rc)
+            print("  Radius of curvature:", self.Rc)
+            print("  Axis unit vector:", self.xihat)
+            print("  Apex distance:", self.R0)
         
 
 
@@ -177,7 +177,7 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
         linewidths=0.5)
 
 
-    for iter in range(6):
+    for iter in range(5):
         m = np.abs(cc[-1].theta_c) <= 30.0
         cc.append(FittedCircle(x, y, xs, ys, mask=m, verbose=True))
 

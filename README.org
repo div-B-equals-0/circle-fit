@@ -2,7 +2,7 @@
 Fit circle to set of points. Find radius of curvature. Find planitude and alatude with respect to another point.
 ** Test
 #+BEGIN_SRC sh :results verbatim :exports both
-python circle-fit.py inner
+python circle-fit.py outer
 #+END_SRC
 
 #+RESULTS:
@@ -21,48 +21,42 @@ python circle-fit.py inner
         x: array([ 2.50000006,  0.49999954])
 ### Image Test
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 343.80297433  729.22269297]
-Radius of curvature: 75.4959571496
-Axis unit vector: [-0.46573022  0.88492675]
-Apex distance: 14.0098366536
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 355.99407571  710.69691433]
+  Radius of curvature: 110.699804533
+  Axis unit vector: [-0.48844498  0.87259469]
+  Apex distance: 27.1140431985
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 333.744174   754.9897307]
-Radius of curvature: 50.2664146965
-Axis unit vector: [-0.5441388   0.83899521]
-Apex distance: 16.1259632911
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 339.5291488   739.03588882]
+  Radius of curvature: 79.8702436867
+  Axis unit vector: [-0.47940105  0.87759594]
+  Apex distance: 29.0524182459
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 348.10535149  736.70840611]
-Radius of curvature: 72.705315255
-Axis unit vector: [-0.57452505  0.818487  ]
-Apex distance: 15.3739220055
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 335.30235349  747.89749771]
+  Radius of curvature: 70.4042079803
+  Axis unit vector: [-0.49088847  0.87122242]
+  Apex distance: 29.3860851189
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 333.744174   754.9897307]
-Radius of curvature: 50.2664146965
-Axis unit vector: [-0.5441388   0.83899521]
-Apex distance: 16.1259632911
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 331.99998568  752.85851559]
+  Radius of curvature: 64.646138874
+  Axis unit vector: [-0.47987681  0.87733588]
+  Apex distance: 29.5684781066
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 348.10535149  736.70840611]
-Radius of curvature: 72.705315255
-Axis unit vector: [-0.57452505  0.818487  ]
-Apex distance: 15.3739220055
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 331.99998568  752.85851559]
+  Radius of curvature: 64.646138874
+  Axis unit vector: [-0.47987681  0.87733588]
+  Apex distance: 29.5684781066
 Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 333.744174   754.9897307]
-Radius of curvature: 50.2664146965
-Axis unit vector: [-0.5441388   0.83899521]
-Apex distance: 16.1259632911
-Optimization terminated successfully.
-Star position: (315.1670298243821, 783.6334060361919)
-Center position: [ 348.10535149  736.70840611]
-Radius of curvature: 72.705315255
-Axis unit vector: [-0.57452505  0.818487  ]
-Apex distance: 15.3739220055
-Figure file: plot-w000-400-inner.pdf
+  Star position: (315.1670298243821, 783.6334060361919)
+  Center position: [ 331.99998568  752.85851559]
+  Radius of curvature: 64.646138874
+  Axis unit vector: [-0.47987681  0.87733588]
+  Apex distance: 29.5684781066
+Figure file: plot-w000-400-outer.pdf
 #+end_example
 
 #+BEGIN_SRC sh
