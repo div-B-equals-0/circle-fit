@@ -2,7 +2,7 @@
 Fit circle to set of points. Find radius of curvature. Find planitude and alatude with respect to another point.
 ** Test
 #+BEGIN_SRC sh :results verbatim :exports both
-python circle-fit.py inner
+python circle-fit.py ridge 30
 #+END_SRC
 
 #+RESULTS:
@@ -20,31 +20,13 @@ python circle-fit.py inner
   success: True
         x: array([ 2.50000006,  0.49999954])
 ### Image Test
-Optimization terminated successfully.
-  Apex distance: 15.7098958138
-  Radius of curvature: 78.5036793024
-  Perpendicular radius (+/-): [ 41.46313869  41.94730266]
-Optimization terminated successfully.
-  Apex distance: 18.7913654544
-  Radius of curvature: 50.7816094917
-  Perpendicular radius (+/-): [ 47.31936246  39.67468654]
-Optimization terminated successfully.
-  Apex distance: 18.7432282735
-  Radius of curvature: 50.4538404738
-  Perpendicular radius (+/-): [ 52.38147381  37.88079261]
-Optimization terminated successfully.
-  Apex distance: 18.7432282735
-  Radius of curvature: 50.4538404738
-  Perpendicular radius (+/-): [ 52.38147381  37.88079261]
-Optimization terminated successfully.
-  Apex distance: 18.7432282735
-  Radius of curvature: 50.4538404738
-  Perpendicular radius (+/-): [ 52.38147381  37.88079261]
-Optimization terminated successfully.
-  Apex distance: 18.7432282735
-  Radius of curvature: 50.4538404738
-  Perpendicular radius (+/-): [ 52.38147381  37.88079261]
-Figure file: plot-w000-400-inner.pdf
+CircleFit(Planitude = 4.967816443604298, Alatude = [ 2.932698    3.13737679])
+CircleFit(Planitude = 3.1387908994400675, Alatude = [ 2.97563731  2.37791249])
+CircleFit(Planitude = 3.663795158715213, Alatude = [ 3.22543513  2.24241671])
+CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
+CircleFit(Planitude = 3.663795158715213, Alatude = [ 3.22543513  2.24241671])
+CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
+Figure file: plot-w000-400-ridge.pdf
 #+end_example
 
 #+BEGIN_SRC sh

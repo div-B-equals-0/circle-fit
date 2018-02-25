@@ -150,15 +150,20 @@ class FittedCircle(object):
         # Find sort order of theta increasing
         order = np.argsort(self.theta)
         self.R90 = np.interp([-90.0, 90.0], self.theta[order], self.R[order])
+        self.Pi = self.Rc/self.R0
+        self.Lambda = self.R90/self.R0
         if self.verbose:
             print(self.results.message)
             print("  Apex distance:", self.R0)
             print("  Radius of curvature:", self.Rc)
             print("  Perpendicular radius (+/-):", self.R90)
+
+    def __str__(self):
+        return f"CircleFit(Planitude = {self.Pi}, Alatude = {self.Lambda})"
         
 
 
-def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
+def plot_solution(region_filename, fits_filename, plotfile, delta_theta):
     # Find WCS transformation from FITS image header
     hdu, = fits.open(fits_filename)
     w = WCS(hdu.header)
@@ -167,7 +172,7 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
     ax.imshow(hdu.data, origin='lower', vmin=2.8, vmax=3.5, cmap='viridis')
 
     xs, ys, x, y = get_arc_xy(region_filename, fits_filename)
-    cc = [FittedCircle(x, y, xs, ys, verbose=True)]
+    cc = [FittedCircle(x, y, xs, ys)]
 
     # Size of viewport
     size = 150
@@ -182,8 +187,8 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
 
 
     for iter in range(5):
-        m = np.abs(cc[-1].theta_c) <= 30.0
-        cc.append(FittedCircle(x, y, xs, ys, mask=m, verbose=True))
+        m = np.abs(cc[-1].theta_c) <= delta_theta
+        cc.append(FittedCircle(x, y, xs, ys, mask=m))
 
     ax.scatter(x[m], y[m], s=30, color='r', zorder=2)
     ax.scatter(x[~m], y[~m], s=15, color='w', zorder=2)
@@ -198,7 +203,7 @@ def plot_solution(region_filename, fits_filename, plotfile, verbose=True):
             ls="--", color=color,
         )
         ax.scatter(c.rc[0], c.rc[1], s=30, color=color)
-
+        print(c)
     ax.scatter(xs, ys, s=30, color='k', zorder=2)
 
     ra, dec = ax.coords
@@ -230,7 +235,12 @@ if __name__ == "__main__":
         TEST_PLOT_FILE = TEST_PLOT_FILE.replace("ridge", arc)
     except:
         pass
-    
+
+    try:
+        DELTA_THETA = float(sys.argv[2])
+    except:
+        DELTA_THETA = 30.0
+        
     # Test with simple points
     print("### Simple Test")
     results = fit_circle_to_xy(*TESTDATA)
@@ -240,4 +250,4 @@ if __name__ == "__main__":
     # Test with real image and region file
     print("### Image Test")
     print("Figure file:",
-          plot_solution(TEST_REGION_FILE, TEST_FITS_FILE, TEST_PLOT_FILE))
+          plot_solution(TEST_REGION_FILE, TEST_FITS_FILE, TEST_PLOT_FILE, DELTA_THETA))
