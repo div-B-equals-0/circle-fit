@@ -2,7 +2,7 @@
 Fit circle to set of points. Find radius of curvature. Find planitude and alatude with respect to another point.
 ** Test
 #+BEGIN_SRC sh :results verbatim :exports both
-python circle-fit.py ridge 30
+python circle-fit.py inner 75
 #+END_SRC
 
 #+RESULTS:
@@ -20,13 +20,11 @@ python circle-fit.py ridge 30
   success: True
         x: array([ 2.50000006,  0.49999954])
 ### Image Test
-CircleFit(Planitude = 4.967816443604298, Alatude = [ 2.932698    3.13737679])
-CircleFit(Planitude = 3.1387908994400675, Alatude = [ 2.97563731  2.37791249])
-CircleFit(Planitude = 3.663795158715213, Alatude = [ 3.22543513  2.24241671])
-CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
-CircleFit(Planitude = 3.663795158715213, Alatude = [ 3.22543513  2.24241671])
-CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
-Figure file: plot-w000-400-ridge.pdf
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+Figure file: plot-w000-400-inner.pdf
 #+end_example
 
 #+BEGIN_SRC sh

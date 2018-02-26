@@ -186,8 +186,8 @@ def plot_solution(region_filename, fits_filename, plotfile, delta_theta):
         linewidths=0.5)
 
 
-    for iter in range(5):
-        m = np.abs(cc[-1].theta_c) <= delta_theta
+    for iter in range(3):
+        m = np.abs(cc[-1].theta) <= delta_theta
         cc.append(FittedCircle(x, y, xs, ys, mask=m))
 
     ax.scatter(x[m], y[m], s=30, color='r', zorder=2)
@@ -239,13 +239,14 @@ if __name__ == "__main__":
     try:
         DELTA_THETA = float(sys.argv[2])
     except:
-        DELTA_THETA = 30.0
-        
+        DELTA_THETA = 60.0
+
+    TEST_PLOT_FILE = TEST_PLOT_FILE.replace(".pdf", f"-{int(DELTA_THETA):02d}.pdf")
+    
     # Test with simple points
     print("### Simple Test")
     results = fit_circle_to_xy(*TESTDATA)
     assert np.allclose(results.x, TESTCENTER)
-    print(results)
 
     # Test with real image and region file
     print("### Image Test")
