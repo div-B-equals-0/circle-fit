@@ -1,37 +1,78 @@
 * circle-fit
 Fit circle to set of points. Find radius of curvature. Find planitude and alatude with respect to another point.
-** Test
+** Tests with 000-400
+*** Max \theta = 60\deg
 #+BEGIN_SRC sh :results verbatim :exports both
-python circle-fit.py inner 75
+for arc in inner ridge outer; do
+    python circle-fit.py $arc 60
+done
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
 ### Simple Test
-      fun: 9.093083936160763e-14
- hess_inv: array([[  1.00000000e+00,   1.65985682e-05],
-       [  1.65985682e-05,   1.25826685e+00]])
-      jac: array([  2.60532386e-07,  -3.61247888e-07])
-  message: 'Optimization terminated successfully.'
-     nfev: 20
-      nit: 4
-     njev: 5
-   status: 0
-  success: True
-        x: array([ 2.50000006,  0.49999954])
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.691843674826006, Alatude = [ 2.79468793  2.02103885])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+Figure file: plot-w000-400-inner-60.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816443604298, Alatude = [ 2.932698    3.13737679])
+CircleFit(Planitude = 2.988948352188401, Alatude = [ 3.33962494  2.09212557])
+CircleFit(Planitude = 3.2622665392751626, Alatude = [ 3.37769236  2.08824669])
+CircleFit(Planitude = 3.2622665392751626, Alatude = [ 3.37769236  2.08824669])
+Figure file: plot-w000-400-ridge-60.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+Figure file: plot-w000-400-outer-60.pdf
+#+end_example
+
+#+BEGIN_SRC sh :results none
+open plot-w000-400-*-60.pdf
+#+END_SRC
+
+*** Max \theta = 75\deg
+#+BEGIN_SRC sh :results verbatim :exports both
+for arc in inner ridge outer; do
+    python circle-fit.py $arc 75
+done
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+### Simple Test
 ### Image Test
 CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
 CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
 CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
 CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
-Figure file: plot-w000-400-inner.pdf
+Figure file: plot-w000-400-inner-75.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816443604298, Alatude = [ 2.932698    3.13737679])
+CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
+CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
+CircleFit(Planitude = 3.3182643444199673, Alatude = [ 3.16200501  2.25735773])
+Figure file: plot-w000-400-ridge-75.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+CircleFit(Planitude = 2.6029275271632204, Alatude = [ 2.43870228  2.49614293])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+Figure file: plot-w000-400-outer-75.pdf
 #+end_example
 
-#+BEGIN_SRC sh
-open plot-w000-400-*.pdf
+#+BEGIN_SRC sh :results none
+open plot-w000-400-*-75.pdf
 #+END_SRC
 
-#+RESULTS:
 
 ** History
 + Initial motivation [2018-02-22 Thu]
