@@ -4,7 +4,7 @@ Fit circle to set of points. Find radius of curvature. Find planitude and alatud
 *** Max \theta = 60\deg
 #+BEGIN_SRC sh :results verbatim :exports both
 for arc in inner ridge outer; do
-    python circle-fit.py $arc 60
+    python circle_fit.py $arc 60
 done
 #+END_SRC
 
@@ -40,7 +40,7 @@ open plot-w000-400-*-60.pdf
 *** Max \theta = 75\deg
 #+BEGIN_SRC sh :results verbatim :exports both
 for arc in inner ridge outer; do
-    python circle-fit.py $arc 75
+    python circle_fit.py $arc 75
 done
 #+END_SRC
 
@@ -72,6 +72,207 @@ Figure file: plot-w000-400-outer-75.pdf
 #+BEGIN_SRC sh :results none
 open plot-w000-400-*-75.pdf
 #+END_SRC
+
+
+*** Varying \Delta\theta
+#+BEGIN_SRC sh :results verbatim :exports both
+for dtheta in 45 50 55 60 65 70 75 80; do
+    python circle_fit.py outer $dtheta 
+done
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+Figure file: plot-w000-400-outer-45.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+Figure file: plot-w000-400-outer-50.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 1.7751781954824204, Alatude = [ 2.31495089  2.51974362])
+CircleFit(Planitude = 2.153028082620857, Alatude = [ 2.37869319  2.49517488])
+CircleFit(Planitude = 2.153028082620857, Alatude = [ 2.37869319  2.49517488])
+Figure file: plot-w000-400-outer-55.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+CircleFit(Planitude = 2.1863194527977723, Alatude = [ 2.36793742  2.51168913])
+Figure file: plot-w000-400-outer-60.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.395834889040762, Alatude = [ 2.42306285  2.47884885])
+CircleFit(Planitude = 2.395834889040762, Alatude = [ 2.42306285  2.47884885])
+CircleFit(Planitude = 2.395834889040762, Alatude = [ 2.42306285  2.47884885])
+Figure file: plot-w000-400-outer-65.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.47812384367905, Alatude = [ 2.40200297  2.51540511])
+CircleFit(Planitude = 2.47812384367905, Alatude = [ 2.40200297  2.51540511])
+CircleFit(Planitude = 2.47812384367905, Alatude = [ 2.40200297  2.51540511])
+Figure file: plot-w000-400-outer-70.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+CircleFit(Planitude = 2.6029275271632204, Alatude = [ 2.43870228  2.49614293])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+Figure file: plot-w000-400-outer-75.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.082747959149228, Alatude = [ 2.61635595  2.69824478])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+CircleFit(Planitude = 2.749177125658035, Alatude = [ 2.40823888  2.55841318])
+Figure file: plot-w000-400-outer-80.pdf
+#+end_example
+
+#+BEGIN_SRC sh :results verbatim :exports both
+for dtheta in 45 50 55 60 65 70 75 80; do
+    python circle_fit.py inner $dtheta 
+done
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.379483411143336, Alatude = [ 3.05273245  1.88517563])
+CircleFit(Planitude = 3.3123691125432404, Alatude = [ 3.12725452  1.87831834])
+CircleFit(Planitude = 3.3123691125432404, Alatude = [ 3.12725452  1.87831834])
+Figure file: plot-w000-400-inner-45.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.379483411143336, Alatude = [ 3.05273245  1.88517563])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+CircleFit(Planitude = 2.379483411143336, Alatude = [ 3.05273245  1.88517563])
+Figure file: plot-w000-400-inner-50.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.1974063995901365, Alatude = [ 3.05698842  1.86748459])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+Figure file: plot-w000-400-inner-55.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.691843674826006, Alatude = [ 2.79468793  2.02103885])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+CircleFit(Planitude = 3.1635099604551207, Alatude = [ 2.91822403  1.99890029])
+Figure file: plot-w000-400-inner-60.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.691843674826006, Alatude = [ 2.79468793  2.02103885])
+CircleFit(Planitude = 2.691843674826006, Alatude = [ 2.79468793  2.02103885])
+CircleFit(Planitude = 2.691843674826006, Alatude = [ 2.79468793  2.02103885])
+Figure file: plot-w000-400-inner-65.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.5477140058624785, Alatude = [ 2.76943656  2.01536123])
+CircleFit(Planitude = 2.9115410397751904, Alatude = [ 2.73912298  2.05740143])
+CircleFit(Planitude = 2.9115410397751904, Alatude = [ 2.73912298  2.05740143])
+Figure file: plot-w000-400-inner-70.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+CircleFit(Planitude = 2.720995578886615, Alatude = [ 2.65410731  2.06889839])
+Figure file: plot-w000-400-inner-75.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.997084654962843, Alatude = [ 2.63930068  2.67011972])
+CircleFit(Planitude = 2.5763351483145707, Alatude = [ 2.60311374  2.06544767])
+CircleFit(Planitude = 2.8582443877093637, Alatude = [ 2.61112017  2.10063206])
+CircleFit(Planitude = 2.8582443877093637, Alatude = [ 2.61112017  2.10063206])
+Figure file: plot-w000-400-inner-80.pdf
+#+end_example
+
+#+BEGIN_SRC sh :results verbatim :exports both
+for dtheta in 45 50 55 60 65 70 75 80; do
+    python circle_fit.py ridge $dtheta 
+done
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 6.159477975665889, Alatude = [ 3.49366528  2.10161637])
+CircleFit(Planitude = 8.34245226369428, Alatude = [ 3.41930177  2.15261946])
+CircleFit(Planitude = 8.34245226369428, Alatude = [ 3.41930177  2.15261946])
+Figure file: plot-w000-400-ridge-45.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 3.6575972905349134, Alatude = [ 3.30546862  2.1581432 ])
+CircleFit(Planitude = 8.34245226369428, Alatude = [ 3.41930177  2.15261946])
+CircleFit(Planitude = 8.34245226369428, Alatude = [ 3.41930177  2.15261946])
+Figure file: plot-w000-400-ridge-50.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 3.6575972905349134, Alatude = [ 3.30546862  2.1581432 ])
+CircleFit(Planitude = 4.342688070224162, Alatude = [ 3.52014766  2.05143468])
+CircleFit(Planitude = 4.342688070224162, Alatude = [ 3.52014766  2.05143468])
+Figure file: plot-w000-400-ridge-55.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 2.9889442370073316, Alatude = [ 3.33962553  2.09212458])
+CircleFit(Planitude = 3.2622581791594762, Alatude = [ 3.37769271  2.08824559])
+CircleFit(Planitude = 3.2622581791594762, Alatude = [ 3.37769271  2.08824559])
+Figure file: plot-w000-400-ridge-60.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 2.9889442370073316, Alatude = [ 3.33962553  2.09212458])
+CircleFit(Planitude = 4.217268850449185, Alatude = [ 3.31945322  2.19582004])
+CircleFit(Planitude = 4.217268850449185, Alatude = [ 3.31945322  2.19582004])
+Figure file: plot-w000-400-ridge-65.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 3.318260555092649, Alatude = [ 3.16200474  2.25735718])
+CircleFit(Planitude = 3.663809279406942, Alatude = [ 3.22543663  2.24241749])
+CircleFit(Planitude = 3.663809279406942, Alatude = [ 3.22543663  2.24241749])
+Figure file: plot-w000-400-ridge-70.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 3.318260555092649, Alatude = [ 3.16200474  2.25735718])
+CircleFit(Planitude = 3.318260555092649, Alatude = [ 3.16200474  2.25735718])
+CircleFit(Planitude = 3.318260555092649, Alatude = [ 3.16200474  2.25735718])
+Figure file: plot-w000-400-ridge-75.pdf
+### Simple Test
+### Image Test
+CircleFit(Planitude = 4.967816690867612, Alatude = [ 2.93269813  3.13737686])
+CircleFit(Planitude = 2.9080380001255186, Alatude = [ 3.08578284  2.25119554])
+CircleFit(Planitude = 3.6421288513183048, Alatude = [ 3.13032277  2.32781293])
+CircleFit(Planitude = 3.6421288513183048, Alatude = [ 3.13032277  2.32781293])
+Figure file: plot-w000-400-ridge-80.pdf
+#+end_example
+
 
 
 ** History

@@ -16,6 +16,8 @@ import matplotlib.patches
 import seaborn as sns
 sns.set_style('white')
 
+import pdb
+
 def read_arc_data_ds9(filename):
     """
     Return the sky coordinates of a star (single point of type
@@ -78,9 +80,10 @@ def objective_f(center, xdata, ydata):
     """Function to minimize"""
     return square_deviation(xdata, ydata, center[0], center[1])
     
-def fit_circle_to_xy(x, y):
-    # guess the starting values
-    soln0 = np.array((np.mean(x), np.mean(y)))
+def fit_circle_to_xy(x, y, soln0=None):
+    # guess the starting values if not provided
+    if soln0 is None:
+        soln0 = np.array((np.mean(x), np.mean(y)))
     # Do the fitting
     soln = minimize(objective_f, soln0, args=(x, y))
     return soln
@@ -110,15 +113,20 @@ def apex_distance(r0, rc, Rc, uvec):
 
 def find_theta(x, y, x0, y0, uvec):
     """
-    Find angle in degrees of all points (`x`, `y`) from the axis
-    `uvec`, measured around the point (`x0`, `y0`)
+    Find angle in degrees of all points (`x`, `y`) from the axis unit
+    vector `uvec`, measured around the point (`x0`, `y0`)
 
     According to need, (x0, y0) can either be the star or the center
     of curvature,
     """
-    xy = np.stack((x - x0, y - y0), axis=-1)
-    R_cos_theta = np.dot(xy, uvec)
-    R_sin_theta = np.cross(xy, uvec)
+
+    assert len(x) == len(y)
+    assert len(uvec) == 2
+    assert np.isclose(np.hypot(*uvec), 1.0), uvec
+    # Rvec is array of radius vectors from (x0, y0) to each (x, y)
+    Rvec = np.stack((x - x0, y - y0), axis=-1)
+    R_cos_theta = np.dot(Rvec, uvec)
+    R_sin_theta = np.cross(Rvec, uvec)
     theta = np.arctan2(R_sin_theta, R_cos_theta)
     return np.degrees(theta)
 
@@ -129,6 +137,7 @@ class FittedCircle(object):
         self.y = y
         self.xs = xs
         self.ys = ys
+        self.r0 = self.xs, self.ys
         self.verbose = verbose
         if mask is None:
             # Use all the x, y points
@@ -136,10 +145,12 @@ class FittedCircle(object):
         else:
             # Restrict to certain x, y points
             self.mask = mask
-        self.results = fit_circle_to_xy(self.x[self.mask], self.y[self.mask])
-        self.r0 = self.xs, self.ys
+        # Initial guess for rc is source position r0
+        self.results = fit_circle_to_xy(self.x[self.mask], self.y[self.mask],
+                                        soln0=self.r0)
         self.rc = self.results.x
         self.Rc = mean_radius(self.x[self.mask], self.y[self.mask], *self.results.x)
+        # pdb.set_trace()
         self.xihat = axis_unit_vector(self.r0, self.rc)
         self.R0 = apex_distance(self.r0, self.rc, self.Rc, self.xihat)
         # Calculate the theta values for all points, regardless of the mask
