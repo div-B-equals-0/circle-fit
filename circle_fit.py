@@ -206,8 +206,8 @@ def plot_solution(
         m = np.abs(cc[-1].theta) <= delta_theta
         cc.append(FittedCircle(x, y, xs, ys, mask=m))
 
-    ax.scatter(x[m], y[m], s=30, color='r', zorder=2)
-    ax.scatter(x[~m], y[~m], s=15, color='w', zorder=2)
+    ax.scatter(x[m], y[m], s=10, color='r', zorder=2)
+    ax.scatter(x[~m], y[~m], s=10, color='w', zorder=2)
 
     colors = sns.color_palette("Oranges_r", n_colors=len(cc))
     for c, color in zip(cc, colors):
@@ -220,8 +220,16 @@ def plot_solution(
         )
         ax.scatter(c.rc[0], c.rc[1], s=30, color=color)
         print(c)
+    # Draw the R_90 radii for the final fit
+    # Use fact that perpendicular(x, y) = (-y, x)
+    ax.plot(
+        [xs - c.R90[0]*c.xihat[1], xs + c.R90[1]*c.xihat[1]],
+        [ys + c.R90[0]*c.xihat[0], ys - c.R90[1]*c.xihat[0]],
+        ls=":", color=color,
+        )
+    
     ax.scatter(xs, ys, s=30, color='k', zorder=2)
-
+    
     ra, dec = ax.coords
     ra.set_major_formatter('hh:mm:ss.ss')
     dec.set_major_formatter('dd:mm:ss.s')
