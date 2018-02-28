@@ -16,8 +16,6 @@ import matplotlib.patches
 import seaborn as sns
 sns.set_style('white')
 
-import pdb
-
 def read_arc_data_ds9(filename):
     """
     Return the sky coordinates of a star (single point of type
@@ -174,13 +172,16 @@ class FittedCircle(object):
         
 
 
-def plot_solution(region_filename, fits_filename, plotfile, delta_theta):
+def plot_solution(
+        region_filename, fits_filename, plotfile, delta_theta,
+        vmin=2.8, vmax=3.5, 
+):
     # Find WCS transformation from FITS image header
     hdu, = fits.open(fits_filename)
     w = WCS(hdu.header)
     # Pot the image data from the FITS file
     fig, ax = plt.subplots(subplot_kw=dict(projection=w))
-    ax.imshow(hdu.data, origin='lower', vmin=2.8, vmax=3.5, cmap='viridis')
+    ax.imshow(hdu.data, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
     xs, ys, x, y = get_arc_xy(region_filename, fits_filename)
     cc = [FittedCircle(x, y, xs, ys)]
@@ -193,7 +194,7 @@ def plot_solution(region_filename, fits_filename, plotfile, delta_theta):
     # Contour of a smoothed version
     ax.contour(
         convolve_fft(hdu.data, Gaussian2DKernel(stddev=2)),
-        levels=np.linspace(2.8, 3.5, 15),
+        levels=np.linspace(vmin, vmax, 15),
         linewidths=0.5)
 
 
