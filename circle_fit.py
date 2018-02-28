@@ -16,19 +16,19 @@ import matplotlib.patches
 import seaborn as sns
 sns.set_style('white')
 
-def read_arc_data_ds9(filename):
+def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     """
     Return the sky coordinates of a star (single point of type
-    'circle') and arc (multiple points of type: 'x'), which are read
-    from the DS9 region file `filename`
+    `pt_star`) and arc (multiple points of type: `pt_arc`), which are
+    read from the DS9 region file `filename`
     """
     regions = rg.read_ds9(filename)
 
     try:
-        star, = [x for x in regions if x.visual['point'] == 'circle']
+        star, = [x for x in regions if x.visual['point'] == pt_star]
     except IndexError:
         sys.exit("One and only one 'circle' region is required")
-    points = [x for x in regions if x.visual['point'] == 'x']
+    points = [x for x in regions if x.visual['point'] == pt_arc]
     return star, points
 
 
@@ -174,8 +174,11 @@ class FittedCircle(object):
 
 def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
-        vmin=2.8, vmax=3.5, 
+        vmin=2.8, vmax=3.5, sigma=2.0,
 ):
+    """
+    Iteratively fit circle to bow and plot the result. 
+    """
     # Find WCS transformation from FITS image header
     hdu, = fits.open(fits_filename)
     w = WCS(hdu.header)
@@ -186,19 +189,20 @@ def plot_solution(
     xs, ys, x, y = get_arc_xy(region_filename, fits_filename)
     cc = [FittedCircle(x, y, xs, ys)]
 
-    # Size of viewport
+    # Size of view port
     size = 150
     x1, x2 = xs - size, xs + size
     y1, y2 = ys - size, ys + size
     
-    # Contour of a smoothed version
+    # Contour of a smoothed version of image
     ax.contour(
-        convolve_fft(hdu.data, Gaussian2DKernel(stddev=2)),
+        convolve_fft(hdu.data, Gaussian2DKernel(stddev=sigma)),
         levels=np.linspace(vmin, vmax, 15),
         linewidths=0.5)
 
-
+    # Iterate to improve the fit
     for iter in range(3):
+        # The mask m selects points within delta_theta of previous axis
         m = np.abs(cc[-1].theta) <= delta_theta
         cc.append(FittedCircle(x, y, xs, ys, mask=m))
 
