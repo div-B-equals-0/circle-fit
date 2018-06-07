@@ -32,18 +32,29 @@ def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     return star, points
 
 
-def get_arc_xy(region_filename, fits_filename):
+def get_arc_xy(region_filename, fits_filename, resample=False):
     """
-    Return pixel coordinates for arc points and star point, which
-    are read as sky coordinates from `region_filename` in DS9 format
-    (the arc points must have the 'x' shape and the star point must
-    have the 'circle' shape).  The WCS transformation is read from the
+    Return pixel coordinates for arc points and star point, which are
+    read as sky coordinates from `region_filename` in DS9 format (the
+    arc points must have the 'x' shape and the star point must have
+    the 'circle' shape).  The WCS transformation is read from the
     header of `fits_filename`.
 
     Returns `xs`, `ys`, `x`, `y`
+
+    If optional argument `resample` is True (default: False), then
+    resample the arc points with replacement to give a list of the
+    same length (but with repetitions).  This can be used for bootstrapping
     """
     # Find the arc and star sky coordinates 
     star, points = read_arc_data_ds9(region_filename)
+    
+    if resample:
+        # Resampling is for bootstrap estimation of uncertainties.
+        # Repeat the process 50 times with resample=True to get a good
+        # idea of the spread
+        points = np.random.choice(points, len(points))
+    
     # Find WCS transformation from FITS image header
     hdu, = fits.open(fits_filename)
     w = WCS(hdu.header)
@@ -174,7 +185,7 @@ class FittedCircle(object):
 
 def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
-        vmin=2.8, vmax=3.5, sigma=2.0,
+        vmin=2.8, vmax=3.5, sigma=2.0, resample=False,
 ):
     """
     Iteratively fit circle to bow and plot the result. 
@@ -186,7 +197,7 @@ def plot_solution(
     fig, ax = plt.subplots(subplot_kw=dict(projection=w))
     ax.imshow(hdu.data, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
-    xs, ys, x, y = get_arc_xy(region_filename, fits_filename)
+    xs, ys, x, y = get_arc_xy(region_filename, fits_filename, resample=resample)
     cc = [FittedCircle(x, y, xs, ys)]
 
     # Size of view port
@@ -276,3 +287,16 @@ if __name__ == "__main__":
     print("### Image Test")
     print("Figure file:",
           plot_solution(TEST_REGION_FILE, TEST_FITS_FILE, TEST_PLOT_FILE, DELTA_THETA))
+
+    # Test the resampling
+    for j in range(5):
+        print(f"### Resample Test {j:01d}")
+        print("Figure file:",
+              plot_solution(
+                  TEST_REGION_FILE,
+                  TEST_FITS_FILE,
+                  TEST_PLOT_FILE.replace(".pdf", f"-resample{j:01d}.pdf"),
+                  DELTA_THETA,
+                  resample=True,
+              ))
+        
