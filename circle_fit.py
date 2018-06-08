@@ -32,11 +32,7 @@ def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     return star, points
 
 
-BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = 0.5
-def resample_with_partial_replacement(
-        a,
-        fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION
-):
+def resample_with_partial_replacement(a, fraction):
     """
     Like `numpy.random.choice`, but intermediate between
     `replace=True` and `replace=False`, according to the value of
@@ -64,7 +60,8 @@ def resample_with_partial_replacement(
     return np.concatenate((withouts, withs))
 
 
-def get_arc_xy(region_filename, fits_filename, wcs=None, resample=False):
+def get_arc_xy(region_filename, fits_filename, wcs=None,
+               resample=False, resample_fraction=0.5):
     """
     Return pixel coordinates for arc points and star point, which are
     read as sky coordinates from `region_filename` in DS9 format (the
@@ -86,7 +83,8 @@ def get_arc_xy(region_filename, fits_filename, wcs=None, resample=False):
         # Resampling is for bootstrap estimation of uncertainties.
         # Repeat the process 50 times with resample=True to get a good
         # idea of the spread
-        points = np.random.choice(points, len(points))
+        points = resample_with_partial_replacement(
+            points, fraction=resample_fraction)
     
     # Find WCS transformation from FITS image header
     if wcs is None:
@@ -212,6 +210,8 @@ class FittedCircle(object):
         self.Lambda_m, self.Lambda_p = self.R90/self.R0
         self.Lambda = 0.5*(self.Lambda_p + self.Lambda_m)
         self.dLambda = 0.5*(self.Lambda_p - self.Lambda_m)
+        # Angle of axis (but remember, this is in pixel coordinates)
+        self.angle = np.rad2deg(np.arctan2(*self.xihat))
         if self.verbose:
             print(self.results.message)
             print("  Apex distance:", self.R0)
@@ -242,36 +242,48 @@ class IteratedFit(object):
 
 
 
-class BootstrapShapes(object):
-    """Simple container for shapes of bootstrap-resampled fits"""
-    pass
+class ShapeDistributions(object):
+    """Container for shapes of bootstrap-resampled fits"""
+    def __init__(self, bootstraps):
+        self.Lambda = np.array([b.Lambda for b in bootstraps])
+        self.dLambda = np.array([b.dLambda for b in bootstraps])
+        self.Pi = np.array([b.Pi for b in bootstraps])
+        # Note that R0 is in pixels
+        # TODO: use WCS to convert to arcsec 
+        self.R0 = np.array([b.R0 for b in bootstraps])
+        # TODO: also find position angle of axis in world coordinates
+        self.angle = np.array([b.angle for b in bootstraps])
+        # Stack of all the arrays that can be used 
+        self.data = [self.Pi, self.Lambda, self.dLambda, self.R0, self.angle]
+        self.corr = np.corrcoef(self.data)
+
 
 class FitWithErrors(object):
+    """
+    An iterated circle fit with errors calculated by bootstrap resampling
+    """
     def __init__(self, region_filename, fits_filename,
-                 delta_theta=75, nbootstrap=50
+                 delta_theta=75, nbootstrap=50, fraction=0.5
     ):
         wcs = WCS(fits.open(fits_filename)[0].header)
-        xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs, resample=False)
-        self.bestfit = IteratedFit(x, y, xs, ys, delta_theta)
+        xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
+                                  resample=False)
+        fit = IteratedFit(x, y, xs, ys, delta_theta)
+        self.shape = fit.circles[-1]
+        # bootstraps is a list of FittedCircle() instances
         self.bootstraps = []
         for _ in range(nbootstrap):
-            xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs, resample=True)
+            xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
+                                      resample=True, resample_fraction=fraction)
             fit = IteratedFit(x, y, xs, ys, delta_theta)
             self.bootstraps.append(fit.circles[-1])
-        self._get_bootstrap_shapes()
+        self.shape_dist = ShapeDistributions(self.bootstraps)
 
-    def _get_bootstrap_shapes(self):
-        self.bshapes = BootstrapShapes()
-        self.bshapes.Lambda = np.array([b.Lambda for b in self.bootstraps])
-        self.bshapes.dLambda = np.array([b.dLambda for b in self.bootstraps])
-        self.bshapes.Pi = np.array([b.Pi for b in self.bootstraps])
-        self.bshapes.R0 = np.array([b.R0 for b in self.bootstraps])
-            
 
-            
 def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
-        vmin=2.8, vmax=3.5, sigma=2.0, resample=False,
+        vmin=2.8, vmax=3.5, sigma=2.0,
+        resample=False, resample_fraction=0.5,
 ):
     """
     Iteratively fit circle to bow and plot the result. 
@@ -283,7 +295,8 @@ def plot_solution(
     fig, ax = plt.subplots(subplot_kw=dict(projection=w))
     ax.imshow(hdu.data, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
-    xs, ys, x, y = get_arc_xy(region_filename, fits_filename, resample=resample)
+    xs, ys, x, y = get_arc_xy(region_filename, fits_filename,
+                              resample=resample, resample_fraction=resample_fraction)
     fit = IteratedFit(x, y, xs, ys, delta_theta)
 
     # Size of view port
@@ -387,5 +400,6 @@ if __name__ == "__main__":
                   TEST_PLOT_FILE.replace(".pdf", f"-resample{j:01d}.pdf"),
                   DELTA_THETA,
                   resample=True,
+                  resample_fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION,
               ))
         
