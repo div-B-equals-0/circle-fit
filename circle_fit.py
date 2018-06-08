@@ -32,23 +32,56 @@ def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     return star, points
 
 
-def get_arc_xy(region_filename, fits_filename, resample=False):
+BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = 0.5
+def resample_with_partial_replacement(
+        a,
+        fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION
+):
+    """
+    Like `numpy.random.choice`, but intermediate between
+    `replace=True` and `replace=False`, according to the value of
+    `fraction`.
+
+    If `fraction=1.0`, then it is equivalent to
+    `numpy.random.choice(a, size=len(a), replace=True)`.  If
+    `fraction=0.0`, then it is equivalent to `numpy.random.choice(a,
+    size=len(a), replace=False)`, which just gives you back `a` but
+    with the elements in a different order.  For intermediate values,
+    return a fraction `1 - fraction` of the elements re-sampled
+    WITHOUT replacement, and the remainder re-sampled WITH replacement.
+    """
+    assert 0.0 <= fraction <= 1.0
+    n = len(a)
+    k = int(fraction*n)
+    withouts = np.random.choice(a, n-k, replace=False)
+    remainder = list(set(a) - set(withouts))
+    # remainder = [_ for _ in a if not _ in withouts]
+    assert len(remainder) == k
+    if k > 0:
+        withs = np.random.choice(remainder, k, replace=True)
+    else:
+        withs = []
+    return np.concatenate((withouts, withs))
+
+
+def get_arc_xy(region_filename, fits_filename, wcs=None, resample=False):
     """
     Return pixel coordinates for arc points and star point, which are
     read as sky coordinates from `region_filename` in DS9 format (the
     arc points must have the 'x' shape and the star point must have
     the 'circle' shape).  The WCS transformation is read from the
-    header of `fits_filename`.
+    header of `fits_filename`, or can be provide directly as `wcs` (in
+    which case, `fits_filename` is ignored).
 
     Returns `xs`, `ys`, `x`, `y`
 
     If optional argument `resample` is True (default: False), then
     resample the arc points with replacement to give a list of the
-    same length (but with repetitions).  This can be used for bootstrapping
+    same length (but with repetitions).  This can be used for
+    bootstrapping
     """
     # Find the arc and star sky coordinates 
     star, points = read_arc_data_ds9(region_filename)
-    
     if resample:
         # Resampling is for bootstrap estimation of uncertainties.
         # Repeat the process 50 times with resample=True to get a good
@@ -56,11 +89,12 @@ def get_arc_xy(region_filename, fits_filename, resample=False):
         points = np.random.choice(points, len(points))
     
     # Find WCS transformation from FITS image header
-    hdu, = fits.open(fits_filename)
-    w = WCS(hdu.header)
+    if wcs is None:
+        hdu, = fits.open(fits_filename)
+        wcs = WCS(hdu.header)
     # Convert to pixel coordinates
-    xs, ys = SkyCoord(star.center).to_pixel(w)
-    x, y = SkyCoord([point.center for point in points]).to_pixel(w)
+    xs, ys = SkyCoord(star.center).to_pixel(wcs)
+    x, y = SkyCoord([point.center for point in points]).to_pixel(wcs)
     # Return xs, ys as scalar floats and x, y as 1-d arrays of floats
     return xs[0], ys[0], x, y
     
@@ -141,6 +175,10 @@ def find_theta(x, y, x0, y0, uvec):
 
 
 class FittedCircle(object):
+    """
+    A single circle fitted to a set of points, with an optional mask
+    that specifies which points to include in the fit
+    """
     def __init__(self, x, y, xs, ys, mask=None, verbose=False):
         self.x = x
         self.y = y
@@ -171,7 +209,9 @@ class FittedCircle(object):
         order = np.argsort(self.theta)
         self.R90 = np.interp([-90.0, 90.0], self.theta[order], self.R[order])
         self.Pi = self.Rc/self.R0
-        self.Lambda = self.R90/self.R0
+        self.Lambda_m, self.Lambda_p = self.R90/self.R0
+        self.Lambda = 0.5*(self.Lambda_p + self.Lambda_m)
+        self.dLambda = 0.5*(self.Lambda_p - self.Lambda_m)
         if self.verbose:
             print(self.results.message)
             print("  Apex distance:", self.R0)
@@ -179,10 +219,56 @@ class FittedCircle(object):
             print("  Perpendicular radius (+/-):", self.R90)
 
     def __str__(self):
-        return f"CircleFit(Planitude = {self.Pi}, Alatude = {self.Lambda})"
+        return f"CircleFit(Pi = {self.Pi:.3f}, Lambda = {self.Lambda:.3f}, dLambda = {self.dLambda:.3f})"
         
 
+class IteratedFit(object):
+    """
+    A sequence of `FittedCircle`s, where each after the first has its
+    mask set to those points lying within `delta_theta` of the axis of
+    the previous fit
+    """
+    def __init__(self, x, y, xs, ys, delta_theta=75.0, maxiter=3, verbose=False):
+        # First circle is fitted to all the points
+        self.circles = [FittedCircle(x, y, xs, ys)]
+        self.masks = [np.ones_like(x).astype(bool)]
+        # Iterate to improve the fit
+        for it in range(maxiter):
+            # The mask m selects for the fit only those points that
+            # lie within delta_theta of previous axis
+            m = np.abs(self.circles[-1].theta) <= delta_theta
+            self.circles.append(FittedCircle(x, y, xs, ys, mask=m))
+            self.masks.append(m)
 
+
+
+class BootstrapShapes(object):
+    """Simple container for shapes of bootstrap-resampled fits"""
+    pass
+
+class FitWithErrors(object):
+    def __init__(self, region_filename, fits_filename,
+                 delta_theta=75, nbootstrap=50
+    ):
+        wcs = WCS(fits.open(fits_filename)[0].header)
+        xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs, resample=False)
+        self.bestfit = IteratedFit(x, y, xs, ys, delta_theta)
+        self.bootstraps = []
+        for _ in range(nbootstrap):
+            xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs, resample=True)
+            fit = IteratedFit(x, y, xs, ys, delta_theta)
+            self.bootstraps.append(fit.circles[-1])
+        self._get_bootstrap_shapes()
+
+    def _get_bootstrap_shapes(self):
+        self.bshapes = BootstrapShapes()
+        self.bshapes.Lambda = np.array([b.Lambda for b in self.bootstraps])
+        self.bshapes.dLambda = np.array([b.dLambda for b in self.bootstraps])
+        self.bshapes.Pi = np.array([b.Pi for b in self.bootstraps])
+        self.bshapes.R0 = np.array([b.R0 for b in self.bootstraps])
+            
+
+            
 def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
         vmin=2.8, vmax=3.5, sigma=2.0, resample=False,
@@ -198,7 +284,7 @@ def plot_solution(
     ax.imshow(hdu.data, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
     xs, ys, x, y = get_arc_xy(region_filename, fits_filename, resample=resample)
-    cc = [FittedCircle(x, y, xs, ys)]
+    fit = IteratedFit(x, y, xs, ys, delta_theta)
 
     # Size of view port
     size = 150
@@ -211,17 +297,12 @@ def plot_solution(
         levels=np.linspace(vmin, vmax, 15),
         linewidths=0.5)
 
-    # Iterate to improve the fit
-    for iter in range(3):
-        # The mask m selects points within delta_theta of previous axis
-        m = np.abs(cc[-1].theta) <= delta_theta
-        cc.append(FittedCircle(x, y, xs, ys, mask=m))
-
+    m = fit.masks[-1]
     ax.scatter(x[m], y[m], s=10, color='r', zorder=2)
     ax.scatter(x[~m], y[~m], s=10, color='w', zorder=2)
 
-    colors = sns.color_palette("Oranges_r", n_colors=len(cc))
-    for c, color in zip(cc, colors):
+    colors = sns.color_palette("Oranges_r", n_colors=len(fit.circles))
+    for c, color in zip(fit.circles, colors):
         ax.add_patch(
             matplotlib.patches.Circle(c.rc, radius=c.Rc, ec=color, fc='none'))
         ax.plot(
@@ -255,6 +336,9 @@ def plot_solution(
     return plotfile
     
 
+
+
+
 TESTDATA = np.array([1, 2, 3, 4]), np.array([1, 2, 2, 1])
 TESTCENTER = np.array([2.5, 0.5])
 
@@ -274,7 +358,12 @@ if __name__ == "__main__":
     try:
         DELTA_THETA = float(sys.argv[2])
     except:
-        DELTA_THETA = 60.0
+        DELTA_THETA = 75.0
+
+    try:
+        BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = float(sys.argv[3])
+    except:
+        BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = 0.5
 
     TEST_PLOT_FILE = TEST_PLOT_FILE.replace(".pdf", f"-{int(DELTA_THETA):02d}.pdf")
     
