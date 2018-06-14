@@ -60,6 +60,15 @@ def resample_with_partial_replacement(a, fraction):
     return np.concatenate((withouts, withs))
 
 
+def get_primary_hdu(filename):
+    hdulist = fits.open(filename)
+    try:
+        hdu = hdulist["sci"]
+    except:
+        hdu = hdulist[0]
+    return hdu
+
+
 def get_arc_xy(region_filename, fits_filename, wcs=None,
                resample=False, resample_fraction=0.5):
     """
@@ -88,7 +97,7 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     
     # Find WCS transformation from FITS image header
     if wcs is None:
-        hdu, = fits.open(fits_filename)
+        hdu = get_primary_hdu(fits_filename)
         wcs = WCS(hdu.header)
     # Convert to pixel coordinates
     xs, ys = SkyCoord(star.center).to_pixel(wcs)
@@ -230,14 +239,14 @@ class IteratedFit(object):
     """
     def __init__(self, x, y, xs, ys, delta_theta=75.0, maxiter=3, verbose=False):
         # First circle is fitted to all the points
-        self.circles = [FittedCircle(x, y, xs, ys)]
+        self.circles = [FittedCircle(x, y, xs, ys, verbose=verbose)]
         self.masks = [np.ones_like(x).astype(bool)]
         # Iterate to improve the fit
         for it in range(maxiter):
             # The mask m selects for the fit only those points that
             # lie within delta_theta of previous axis
             m = np.abs(self.circles[-1].theta) <= delta_theta
-            self.circles.append(FittedCircle(x, y, xs, ys, mask=m))
+            self.circles.append(FittedCircle(x, y, xs, ys, mask=m, verbose=verbose))
             self.masks.append(m)
 
 
@@ -263,19 +272,31 @@ class FitWithErrors(object):
     An iterated circle fit with errors calculated by bootstrap resampling
     """
     def __init__(self, region_filename, fits_filename,
-                 delta_theta=75, nbootstrap=50, fraction=0.5
+                 delta_theta=75, nbootstrap=50, fraction=0.5,
+                 verbose=False,
     ):
         wcs = WCS(fits.open(fits_filename)[0].header)
         xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
                                   resample=False)
-        fit = IteratedFit(x, y, xs, ys, delta_theta)
+        if verbose:
+            print(f"#### Full dataset")
+            print(f"Star: {xs:.1f} {ys:.1f}")
+            print(x)
+            print(y)
+            
+        fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose)
         self.shape = fit.circles[-1]
         # bootstraps is a list of FittedCircle() instances
         self.bootstraps = []
         for _ in range(nbootstrap):
             xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
                                       resample=True, resample_fraction=fraction)
-            fit = IteratedFit(x, y, xs, ys, delta_theta)
+            if verbose:
+                print(f"#### Bootstrap #{_}")
+                print(x)
+                print(y)
+
+            fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose)
             self.bootstraps.append(fit.circles[-1])
         self.shape_dist = ShapeDistributions(self.bootstraps)
 
@@ -284,29 +305,47 @@ def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
         vmin=2.8, vmax=3.5, sigma=2.0,
         resample=False, resample_fraction=0.5,
+        verbose=False, maxiter=3,
 ):
     """
     Iteratively fit circle to bow and plot the result. 
     """
     # Find WCS transformation from FITS image header
-    hdu, = fits.open(fits_filename)
+    hdu = get_primary_hdu(fits_filename)
     w = WCS(hdu.header)
-    # Pot the image data from the FITS file
-    fig, ax = plt.subplots(subplot_kw=dict(projection=w))
-    ax.imshow(hdu.data, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
-    xs, ys, x, y = get_arc_xy(region_filename, fits_filename,
+    xs, ys, x, y = get_arc_xy(region_filename, None, wcs=w,
                               resample=resample, resample_fraction=resample_fraction)
-    fit = IteratedFit(x, y, xs, ys, delta_theta)
 
     # Size of view port
     size = 150
     x1, x2 = xs - size, xs + size
     y1, y2 = ys - size, ys + size
+
+    # Cut out a slice of the image to make everything else quicker
+    # Leave a big enough margin to accommodate the smoothing kernel
+    margin = 3*sigma + 2
+    i1, i2 = int(x1 - margin), int(x2 + margin)
+    j1, j2 = int(y1 - margin), int(y2 + margin)
+    data_slice = hdu.data[j1:j2, i1:i2]
+    wslice = w.slice((slice(j1, j2), slice(i1, i2)))
+
+    # Get the points again, but with the new sliced wcs
+    xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wslice,
+                              resample=resample, resample_fraction=resample_fraction)
+    x1, x2 = xs - size, xs + size
+    y1, y2 = ys - size, ys + size
+    fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose, maxiter=maxiter)
+
+    
+    # Plot the image data from the FITS file
+    fig, ax = plt.subplots(subplot_kw=dict(projection=wslice))
+    ax.imshow(data_slice, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
+
     
     # Contour of a smoothed version of image
     ax.contour(
-        convolve_fft(hdu.data, Gaussian2DKernel(stddev=sigma)),
+        convolve_fft(data_slice, Gaussian2DKernel(stddev=sigma)),
         levels=np.linspace(vmin, vmax, 15),
         linewidths=0.5)
 

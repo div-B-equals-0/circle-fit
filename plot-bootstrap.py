@@ -33,6 +33,7 @@ fit = circle_fit.FitWithErrors(
     delta_theta=DELTA_THETA,
     nbootstrap=100,
     fraction=REPLACEMENT_FRACTION,
+    verbose=False,
 )
 
 
