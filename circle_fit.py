@@ -1,9 +1,11 @@
 """
-Fit circle to set of points. 
-Find radius of curvature. 
+Fit circle to set of points.
+Find radius of curvature.
 Find planitude and alatude with respect to another point.
 """
 import sys
+import json
+import os
 import numpy as np
 from scipy.optimize import minimize
 import regions as rg
@@ -15,6 +17,7 @@ from matplotlib import pyplot as plt
 import matplotlib.patches
 import seaborn as sns
 sns.set_style('white')
+
 
 def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     """
@@ -86,7 +89,7 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     same length (but with repetitions).  This can be used for
     bootstrapping
     """
-    # Find the arc and star sky coordinates 
+    # Find the arc and star sky coordinates
     star, points = read_arc_data_ds9(region_filename)
     if resample:
         # Resampling is for bootstrap estimation of uncertainties.
@@ -94,7 +97,7 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
         # idea of the spread
         points = resample_with_partial_replacement(
             points, fraction=resample_fraction)
-    
+
     # Find WCS transformation from FITS image header
     if wcs is None:
         hdu = get_primary_hdu(fits_filename)
@@ -104,7 +107,7 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     x, y = SkyCoord([point.center for point in points]).to_pixel(wcs)
     # Return xs, ys as scalar floats and x, y as 1-d arrays of floats
     return xs[0], ys[0], x, y
-    
+
 
 def mean_radius(x, y, xc, yc):
     """
@@ -117,6 +120,7 @@ def mean_radius(x, y, xc, yc):
     """
     return np.mean(np.hypot(x - xc, y - yc))
 
+
 def square_deviation(x, y, xc, yc):
     """
     Total square deviation of points from mean distance
@@ -126,10 +130,12 @@ def square_deviation(x, y, xc, yc):
     rm = mean_radius(x, y, xc, yc)
     return np.sum((np.hypot(x - xc, y - yc) - rm)**2)
 
+
 def objective_f(center, xdata, ydata):
     """Function to minimize"""
     return square_deviation(xdata, ydata, center[0], center[1])
-    
+
+
 def fit_circle_to_xy(x, y, soln0=None):
     # guess the starting values if not provided
     if soln0 is None:
@@ -250,7 +256,6 @@ class IteratedFit(object):
             self.masks.append(m)
 
 
-
 class ShapeDistributions(object):
     """Container for shapes of bootstrap-resampled fits"""
     def __init__(self, bootstraps):
@@ -258,11 +263,11 @@ class ShapeDistributions(object):
         self.dLambda = np.array([b.dLambda for b in bootstraps])
         self.Pi = np.array([b.Pi for b in bootstraps])
         # Note that R0 is in pixels
-        # TODO: use WCS to convert to arcsec 
+        # TODO: use WCS to convert to arcsec
         self.R0 = np.array([b.R0 for b in bootstraps])
         # TODO: also find position angle of axis in world coordinates
         self.angle = np.array([b.angle for b in bootstraps])
-        # Stack of all the arrays that can be used 
+        # Stack of all the arrays that can be used
         self.data = [self.Pi, self.Lambda, self.dLambda, self.R0, self.angle]
         self.corr = np.corrcoef(self.data)
 
@@ -283,7 +288,7 @@ class FitWithErrors(object):
             print(f"Star: {xs:.1f} {ys:.1f}")
             print(x)
             print(y)
-            
+           
         fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose)
         self.shape = fit.circles[-1]
         # bootstraps is a list of FittedCircle() instances
@@ -308,7 +313,7 @@ def plot_solution(
         verbose=False, maxiter=3,
 ):
     """
-    Iteratively fit circle to bow and plot the result. 
+    Iteratively fit circle to bow and plot the result.
     """
     # Find WCS transformation from FITS image header
     hdu = get_primary_hdu(fits_filename)
@@ -337,12 +342,27 @@ def plot_solution(
     y1, y2 = ys - size, ys + size
     fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose, maxiter=maxiter)
 
-    
+    # Save the important parameters of last fit to a JSON file
+    savecircle = fit.circles[-1]
+    fileprefix, _ = os.path.splitext(plotfile)
+    savedict = {
+        "info": "Last iterated fit from circle_fit.py",
+        "region file": region_filename,
+        "FITS file": fits_filename,
+        "d theta": delta_theta,
+        "Pi": savecircle.Pi,
+        "Lambda": savecircle.Lambda,
+        "d Lambda": savecircle.dLambda,
+        "R0": savecircle.R0,
+        "axis angle": savecircle.angle,
+    }
+    with open(fileprefix + ".json", "w") as f:
+        json.dump(savedict, f, indent=4)
+        
     # Plot the image data from the FITS file
     fig, ax = plt.subplots(subplot_kw=dict(projection=wslice))
     ax.imshow(data_slice, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
 
-    
     # Contour of a smoothed version of image
     ax.contour(
         convolve_fft(data_slice, Gaussian2DKernel(stddev=sigma)),
@@ -373,22 +393,19 @@ def plot_solution(
         )
     
     ax.scatter(xs, ys, s=30, color='k', zorder=2)
-    
+
     ra, dec = ax.coords
     ra.set_major_formatter('hh:mm:ss.ss')
     dec.set_major_formatter('dd:mm:ss.s')
     ra.set_axislabel('RA (J2000)')
     dec.set_axislabel('Dec (J2000)')
-    
+
     ax.set(
         xlim=[x1, x2],
         ylim=[y1, y2],
     )
     fig.savefig(plotfile)
     return plotfile
-    
-
-
 
 
 TESTDATA = np.array([1, 2, 3, 4]), np.array([1, 2, 2, 1])
@@ -418,7 +435,7 @@ if __name__ == "__main__":
         BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = 0.5
 
     TEST_PLOT_FILE = TEST_PLOT_FILE.replace(".pdf", f"-{int(DELTA_THETA):02d}.pdf")
-    
+
     # Test with simple points
     print("### Simple Test")
     results = fit_circle_to_xy(*TESTDATA)
@@ -441,4 +458,3 @@ if __name__ == "__main__":
                   resample=True,
                   resample_fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION,
               ))
-        
