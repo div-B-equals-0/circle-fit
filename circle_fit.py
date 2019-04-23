@@ -310,13 +310,22 @@ def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
         vmin=2.8, vmax=3.5, sigma=2.0,
         resample=False, resample_fraction=0.5,
-        verbose=False, maxiter=3,
+        verbose=False, maxiter=3, remove_sip_kwds_from_header=True,
 ):
     """
     Iteratively fit circle to bow and plot the result.
     """
     # Find WCS transformation from FITS image header
     hdu = get_primary_hdu(fits_filename)
+
+    # Sometimes the SIP image distortion keywords remain in the FITS
+    # header, even though they have already been applied to the image
+    # (i.e. a drizzled image).  This confuses astropy.wcs, so we nuke
+    # all such keywords before they can cause any mischief
+    if remove_sip_kwds_from_header:
+        del hdu.header["A_*"]
+        del hdu.header["B_*"]
+
     w = WCS(hdu.header)
 
     xs, ys, x, y = get_arc_xy(region_filename, None, wcs=w,
