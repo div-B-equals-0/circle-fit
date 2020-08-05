@@ -18,8 +18,11 @@ import matplotlib.patches
 import seaborn as sns
 sns.set_style('white')
 
+# Module-level variables 
+PT_STAR = "circle"
+PT_ARC = "x"
 
-def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
+def read_arc_data_ds9(filename):
     """
     Return the sky coordinates of a star (single point of type
     `pt_star`) and arc (multiple points of type: `pt_arc`), which are
@@ -27,11 +30,12 @@ def read_arc_data_ds9(filename, pt_star="circle", pt_arc="x"):
     """
     regions = rg.read_ds9(filename)
 
+    points = [x for x in regions if x.visual['point'] == PT_ARC]
+    stars = [x for x in regions if x.visual['point'] == PT_STAR]
     try:
-        star, = [x for x in regions if x.visual['point'] == pt_star]
-    except IndexError:
-        sys.exit("One and only one 'circle' region is required")
-    points = [x for x in regions if x.visual['point'] == pt_arc]
+        star, = stars
+    except (IndexError, ValueError) as e:
+        sys.exit(f"One and only one '{PT_STAR}' region is required: {stars}")
     return star, points
 
 
@@ -106,8 +110,12 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     xs, ys = SkyCoord(star.center).to_pixel(wcs)
     x, y = SkyCoord([point.center for point in points]).to_pixel(wcs)
     # Return xs, ys as scalar floats and x, y as 1-d arrays of floats
-    return xs[0], ys[0], x, y
-
+    try:
+        # Original version worked in 2018 version of SkyCoord
+        return xs[0], ys[0], x, y
+    except IndexError:
+        # 2020 version of SkyCoord now returns 0-dimensional arrays for scalar case
+        return float(xs), float(ys), x, y
 
 def mean_radius(x, y, xc, yc):
     """
@@ -356,8 +364,8 @@ def plot_solution(
     fileprefix, _ = os.path.splitext(plotfile)
     savedict = {
         "info": "Last iterated fit from circle_fit.py",
-        "region file": region_filename,
-        "FITS file": fits_filename,
+        "region file": str(region_filename),
+        "FITS file": str(fits_filename),
         "d theta": delta_theta,
         "Pi": savecircle.Pi,
         "Lambda": savecircle.Lambda,
@@ -374,7 +382,7 @@ def plot_solution(
 
     # Contour of a smoothed version of image
     ax.contour(
-        convolve_fft(data_slice, Gaussian2DKernel(stddev=sigma)),
+        convolve_fft(data_slice, Gaussian2DKernel(x_stddev=sigma)),
         levels=np.linspace(vmin, vmax, 15),
         linewidths=0.5)
 
