@@ -316,7 +316,7 @@ class FitWithErrors(object):
 
 def plot_solution(
         region_filename, fits_filename, plotfile, delta_theta,
-        vmin=2.8, vmax=3.5, sigma=2.0,
+        vmin=None, vmax=None, sigma=2.0,
         resample=False, resample_fraction=0.5,
         verbose=False, maxiter=3, remove_sip_kwds_from_header=True,
 ):
@@ -375,6 +375,17 @@ def plot_solution(
     }
     with open(fileprefix + ".json", "w") as f:
         json.dump(savedict, f, indent=4)
+
+    # Find suitable limits if not explicitly specified
+    vmedian = np.median(data_slice)
+    mpos = data_slice > vmedian  # mask of pixels brighter than median
+    vmpd = np.median(data_slice[mpos] - vmedian)  # median positive deviation
+    vmnd = np.median(vmedian - data_slice[~mpos])  # median negative deviation
+    if vmax is None:
+        vmax = vmedian + 5*vmpd
+    if vmin is None:
+        vmin = vmedian - 5*vmnd
+
         
     # Plot the image data from the FITS file
     fig, ax = plt.subplots(subplot_kw=dict(projection=wslice))
