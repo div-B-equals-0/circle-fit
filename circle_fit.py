@@ -42,10 +42,10 @@ def read_arc_data_ds9(filename):
    
     points = [x for x in regions if x.visual['point'] == PT_ARC]
     stars = [x for x in regions if x.visual['point'] == PT_STAR]
-    try:
-        star, = stars
-    except (IndexError, ValueError) as e:
-        sys.exit(f"One and only one '{PT_STAR}' region is required: {stars}")
+    assert len(stars) > 0, f"At least one '{PT_STAR}' region is required"
+    star = stars[0]
+    if len(stars) > 1:
+        print(f"WARNING: multiple '{PT_STAR}' regions found in {filename} - using first one")
     return star, points
 
 
@@ -105,6 +105,7 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     """
     # Find the arc and star sky coordinates
     star, points = read_arc_data_ds9(region_filename)
+    assert(len(points) > 0), "No points found in arc"
     if resample:
         # Resampling is for bootstrap estimation of uncertainties.
         # Repeat the process 50 times with resample=True to get a good
