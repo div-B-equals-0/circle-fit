@@ -22,6 +22,14 @@ sns.set_style('white')
 PT_STAR = "circle"
 PT_ARC = "x"
 
+
+def is_pt_region(x):
+    """
+    True if region is a point-region (rather than a circle, line, box, etc)
+    """
+    return isinstance(x, rg.shapes.point.PointSkyRegion)
+
+
 def read_arc_data_ds9(filename):
     """
     Return the sky coordinates of a star (single point of type
@@ -29,7 +37,9 @@ def read_arc_data_ds9(filename):
     read from the DS9 region file `filename`
     """
     regions = rg.read_ds9(filename)
-
+    # Eliminate regions that are not points since they will cause errors
+    regions = list(filter(is_pt_region, regions))
+   
     points = [x for x in regions if x.visual['point'] == PT_ARC]
     stars = [x for x in regions if x.visual['point'] == PT_STAR]
     try:
