@@ -163,6 +163,7 @@ def axis_unit_vector(r0, rc):
     """
     assert len(r0) == len(rc) == 2
     uvec = np.array(r0) - np.array(rc)
+    assert np.hypot(*uvec) != 0.0, (r0, rc)
     uvec /= np.hypot(*uvec)
     return uvec
 
@@ -186,7 +187,7 @@ def find_theta(x, y, x0, y0, uvec):
 
     assert len(x) == len(y)
     assert len(uvec) == 2
-    assert np.isclose(np.hypot(*uvec), 1.0), uvec
+    assert np.isclose(np.hypot(*uvec), 1.0), (x, y, x0, y0, uvec)
     # Rvec is array of radius vectors from (x0, y0) to each (x, y)
     Rvec = np.stack((x - x0, y - y0), axis=-1)
     R_cos_theta = np.dot(Rvec, uvec)
@@ -433,6 +434,7 @@ def plot_solution(
         ylim=[y1, y2],
     )
     fig.savefig(plotfile)
+    plt.close(fig)              # Avoid resource leak!
     return plotfile
 
 
