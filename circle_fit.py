@@ -253,7 +253,11 @@ class FittedCircle(object):
         )
         self.Pi = self.Rc / self.R0
         self.Lambda_m, self.Lambda_p = self.R90 / self.R0
-        self.Lambda = 0.5 * (self.Lambda_p + self.Lambda_m)
+        # Lambda is likely to be NaN if arc does not reach to sides,
+        # but we use np.nanmean so that it will have a valid value
+        # even if only present on one side
+        self.Lambda = np.nanmean([self.Lambda_p, self.Lambda_m])
+        # But dLambda will be NaN if either side is NaN
         self.dLambda = 0.5 * (self.Lambda_p - self.Lambda_m)
         # Angle of axis (but remember, this is in pixel coordinates)
         self.angle = np.rad2deg(np.arctan2(*self.xihat))
@@ -278,7 +282,7 @@ class IteratedFit(object):
     the previous fit
     """
 
-    def __init__(self, x, y, xs, ys, delthca_theta=75.0, maxiter=3, verbose=False):
+    def __init__(self, x, y, xs, ys, delta_theta=75.0, maxiter=3, verbose=False):
         # First circle is fitted to all the points
         self.circles = [FittedCircle(x, y, xs, ys, verbose=verbose)]
         self.masks = [np.ones_like(x).astype(bool)]
