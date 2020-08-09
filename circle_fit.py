@@ -16,9 +16,10 @@ from astropy.convolution import Gaussian2DKernel, convolve_fft
 from matplotlib import pyplot as plt
 import matplotlib.patches
 import seaborn as sns
-sns.set_style('white')
 
-# Module-level variables 
+sns.set_style("white")
+
+# Module-level variables
 PT_STAR = "circle"
 PT_ARC = "x"
 
@@ -39,13 +40,16 @@ def read_arc_data_ds9(filename):
     regions = rg.read_ds9(filename)
     # Eliminate regions that are not points since they will cause errors
     regions = list(filter(is_pt_region, regions))
-   
-    points = [x for x in regions if x.visual['point'] == PT_ARC]
-    stars = [x for x in regions if x.visual['point'] == PT_STAR]
+
+    points = [x for x in regions if x.visual["point"] == PT_ARC]
+    stars = [x for x in regions if x.visual["point"] == PT_STAR]
     assert len(stars) > 0, f"At least one '{PT_STAR}' region is required"
     star = stars[0]
     if len(stars) > 1:
-        print(f"WARNING: multiple '{PT_STAR}' regions found in {filename} - using first one")
+        print(
+            f"WARNING: multiple '{PT_STAR}' regions found in {filename}",
+            "- using first one",
+        )
     return star, points
 
 
@@ -65,8 +69,8 @@ def resample_with_partial_replacement(a, fraction):
     """
     assert 0.0 <= fraction <= 1.0
     n = len(a)
-    k = int(fraction*n)
-    withouts = np.random.choice(a, n-k, replace=False)
+    k = int(fraction * n)
+    withouts = np.random.choice(a, n - k, replace=False)
     remainder = list(set(a) - set(withouts))
     # remainder = [_ for _ in a if not _ in withouts]
     assert len(remainder) == k
@@ -81,13 +85,14 @@ def get_primary_hdu(filename):
     hdulist = fits.open(filename)
     try:
         hdu = hdulist["sci"]
-    except:
+    except KeyError:
         hdu = hdulist[0]
     return hdu
 
 
-def get_arc_xy(region_filename, fits_filename, wcs=None,
-               resample=False, resample_fraction=0.5):
+def get_arc_xy(
+    region_filename, fits_filename, wcs=None, resample=False, resample_fraction=0.5
+):
     """
     Return pixel coordinates for arc points and star point, which are
     read as sky coordinates from `region_filename` in DS9 format (the
@@ -105,13 +110,12 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
     """
     # Find the arc and star sky coordinates
     star, points = read_arc_data_ds9(region_filename)
-    assert(len(points) > 0), "No points found in arc"
+    assert len(points) > 0, "No points found in arc"
     if resample:
         # Resampling is for bootstrap estimation of uncertainties.
         # Repeat the process 50 times with resample=True to get a good
         # idea of the spread
-        points = resample_with_partial_replacement(
-            points, fraction=resample_fraction)
+        points = resample_with_partial_replacement(points, fraction=resample_fraction)
 
     # Find WCS transformation from FITS image header
     if wcs is None:
@@ -125,8 +129,10 @@ def get_arc_xy(region_filename, fits_filename, wcs=None,
         # Original version worked in 2018 version of SkyCoord
         return xs[0], ys[0], x, y
     except IndexError:
-        # 2020 version of SkyCoord now returns 0-dimensional arrays for scalar case
+        # 2020 version of SkyCoord now returns 0-dimensional arrays
+        # for scalar case
         return float(xs), float(ys), x, y
+
 
 def mean_radius(x, y, xc, yc):
     """
@@ -147,7 +153,7 @@ def square_deviation(x, y, xc, yc):
     Implements equation (E2) of TYH18
     """
     rm = mean_radius(x, y, xc, yc)
-    return np.sum((np.hypot(x - xc, y - yc) - rm)**2)
+    return np.sum((np.hypot(x - xc, y - yc) - rm) ** 2)
 
 
 def objective_f(center, xdata, ydata):
@@ -183,7 +189,7 @@ def apex_distance(r0, rc, Rc, uvec):
     """
     Implements equation (E4) of TYH18
     """
-    R0 = rc + Rc*uvec - r0
+    R0 = rc + Rc * uvec - r0
     return np.hypot(*R0)
 
 
@@ -212,6 +218,7 @@ class FittedCircle(object):
     A single circle fitted to a set of points, with an optional mask
     that specifies which points to include in the fit
     """
+
     def __init__(self, x, y, xs, ys, mask=None, verbose=False):
         self.x = x
         self.y = y
@@ -226,8 +233,9 @@ class FittedCircle(object):
             # Restrict to certain x, y points
             self.mask = mask
         # Initial guess for rc is source position r0
-        self.results = fit_circle_to_xy(self.x[self.mask], self.y[self.mask],
-                                        soln0=self.r0)
+        self.results = fit_circle_to_xy(
+            self.x[self.mask], self.y[self.mask], soln0=self.r0
+        )
         self.rc = self.results.x
         self.Rc = mean_radius(self.x[self.mask], self.y[self.mask], *self.results.x)
         # pdb.set_trace()
@@ -240,11 +248,13 @@ class FittedCircle(object):
         self.R = np.hypot(self.x - self.xs, self.y - self.ys)
         # Find sort order of theta increasing
         order = np.argsort(self.theta)
-        self.R90 = np.interp([-90.0, 90.0], self.theta[order], self.R[order])
-        self.Pi = self.Rc/self.R0
-        self.Lambda_m, self.Lambda_p = self.R90/self.R0
-        self.Lambda = 0.5*(self.Lambda_p + self.Lambda_m)
-        self.dLambda = 0.5*(self.Lambda_p - self.Lambda_m)
+        self.R90 = np.interp(
+            [-90.0, 90.0], self.theta[order], self.R[order], left=np.nan, right=np.nan
+        )
+        self.Pi = self.Rc / self.R0
+        self.Lambda_m, self.Lambda_p = self.R90 / self.R0
+        self.Lambda = 0.5 * (self.Lambda_p + self.Lambda_m)
+        self.dLambda = 0.5 * (self.Lambda_p - self.Lambda_m)
         # Angle of axis (but remember, this is in pixel coordinates)
         self.angle = np.rad2deg(np.arctan2(*self.xihat))
         if self.verbose:
@@ -254,8 +264,12 @@ class FittedCircle(object):
             print("  Perpendicular radius (+/-):", self.R90)
 
     def __str__(self):
-        return f"CircleFit(Pi = {self.Pi:.3f}, Lambda = {self.Lambda:.3f}, dLambda = {self.dLambda:.3f})"
-        
+        return (
+            f"CircleFit(Pi = {self.Pi:.3f}, "
+            f"Lambda = {self.Lambda:.3f}, "
+            f"dLambda = {self.dLambda:.3f})"
+        )
+
 
 class IteratedFit(object):
     """
@@ -263,7 +277,8 @@ class IteratedFit(object):
     mask set to those points lying within `delta_theta` of the axis of
     the previous fit
     """
-    def __init__(self, x, y, xs, ys, delta_theta=75.0, maxiter=3, verbose=False):
+
+    def __init__(self, x, y, xs, ys, delthca_theta=75.0, maxiter=3, verbose=False):
         # First circle is fitted to all the points
         self.circles = [FittedCircle(x, y, xs, ys, verbose=verbose)]
         self.masks = [np.ones_like(x).astype(bool)]
@@ -278,6 +293,7 @@ class IteratedFit(object):
 
 class ShapeDistributions(object):
     """Container for shapes of bootstrap-resampled fits"""
+
     def __init__(self, bootstraps):
         self.Lambda = np.array([b.Lambda for b in bootstraps])
         self.dLambda = np.array([b.dLambda for b in bootstraps])
@@ -296,26 +312,36 @@ class FitWithErrors(object):
     """
     An iterated circle fit with errors calculated by bootstrap resampling
     """
-    def __init__(self, region_filename, fits_filename,
-                 delta_theta=75, nbootstrap=50, fraction=0.5,
-                 verbose=False,
+
+    def __init__(
+        self,
+        region_filename,
+        fits_filename,
+        delta_theta=75,
+        nbootstrap=50,
+        fraction=0.5,
+        verbose=False,
     ):
         wcs = WCS(fits.open(fits_filename)[0].header)
-        xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
-                                  resample=False)
+        xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs, resample=False)
         if verbose:
             print(f"#### Full dataset")
             print(f"Star: {xs:.1f} {ys:.1f}")
             print(x)
             print(y)
-           
+
         fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose)
         self.shape = fit.circles[-1]
         # bootstraps is a list of FittedCircle() instances
         self.bootstraps = []
         for _ in range(nbootstrap):
-            xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wcs,
-                                      resample=True, resample_fraction=fraction)
+            xs, ys, x, y = get_arc_xy(
+                region_filename,
+                None,
+                wcs=wcs,
+                resample=True,
+                resample_fraction=fraction,
+            )
             if verbose:
                 print(f"#### Bootstrap #{_}")
                 print(x)
@@ -327,10 +353,18 @@ class FitWithErrors(object):
 
 
 def plot_solution(
-        region_filename, fits_filename, plotfile, delta_theta,
-        vmin=None, vmax=None, sigma=2.0,
-        resample=False, resample_fraction=0.5,
-        verbose=False, maxiter=3, remove_sip_kwds_from_header=True,
+    region_filename,
+    fits_filename,
+    plotfile,
+    delta_theta,
+    vmin=None,
+    vmax=None,
+    sigma=2.0,
+    resample=False,
+    resample_fraction=0.5,
+    verbose=False,
+    maxiter=3,
+    remove_sip_kwds_from_header=True,
 ):
     """
     Iteratively fit circle to bow and plot the result.
@@ -348,8 +382,13 @@ def plot_solution(
 
     w = WCS(hdu.header)
 
-    xs, ys, x, y = get_arc_xy(region_filename, None, wcs=w,
-                              resample=resample, resample_fraction=resample_fraction)
+    xs, ys, x, y = get_arc_xy(
+        region_filename,
+        None,
+        wcs=w,
+        resample=resample,
+        resample_fraction=resample_fraction,
+    )
 
     # Size of view port
     size = 150
@@ -358,15 +397,20 @@ def plot_solution(
 
     # Cut out a slice of the image to make everything else quicker
     # Leave a big enough margin to accommodate the smoothing kernel
-    margin = 3*sigma + 2
+    margin = 3 * sigma + 2
     i1, i2 = int(x1 - margin), int(x2 + margin)
     j1, j2 = int(y1 - margin), int(y2 + margin)
     data_slice = hdu.data[j1:j2, i1:i2]
     wslice = w.slice((slice(j1, j2), slice(i1, i2)))
 
     # Get the points again, but with the new sliced wcs
-    xs, ys, x, y = get_arc_xy(region_filename, None, wcs=wslice,
-                              resample=resample, resample_fraction=resample_fraction)
+    xs, ys, x, y = get_arc_xy(
+        region_filename,
+        None,
+        wcs=wslice,
+        resample=resample,
+        resample_fraction=resample_fraction,
+    )
     x1, x2 = xs - size, xs + size
     y1, y2 = ys - size, ys + size
     fit = IteratedFit(x, y, xs, ys, delta_theta, verbose=verbose, maxiter=maxiter)
@@ -394,58 +438,58 @@ def plot_solution(
     vmpd = np.median(data_slice[mpos] - vmedian)  # median positive deviation
     vmnd = np.median(vmedian - data_slice[~mpos])  # median negative deviation
     if vmax is None:
-        vmax = vmedian + 5*vmpd
+        vmax = vmedian + 5 * vmpd
     if vmin is None:
-        vmin = vmedian - 5*vmnd
+        vmin = vmedian - 5 * vmnd
 
-        
     # Plot the image data from the FITS file
     fig, ax = plt.subplots(subplot_kw=dict(projection=wslice))
-    ax.imshow(data_slice, origin='lower', vmin=vmin, vmax=vmax, cmap='viridis')
+    ax.imshow(data_slice, origin="lower", vmin=vmin, vmax=vmax, cmap="viridis")
 
     # Contour of a smoothed version of image
     ax.contour(
         convolve_fft(data_slice, Gaussian2DKernel(x_stddev=sigma)),
         levels=np.linspace(vmin, vmax, 15),
-        linewidths=0.5)
+        linewidths=0.5,
+    )
 
     m = fit.masks[-1]
-    ax.scatter(x[m], y[m], s=10, color='r', zorder=2)
-    ax.scatter(x[~m], y[~m], s=10, color='w', zorder=2)
+    ax.scatter(x[m], y[m], s=10, color="r", zorder=2)
+    ax.scatter(x[~m], y[~m], s=10, color="w", zorder=2)
 
     colors = sns.color_palette("Oranges_r", n_colors=len(fit.circles))
     for c, color in zip(fit.circles, colors):
-        ax.add_patch(
-            matplotlib.patches.Circle(c.rc, radius=c.Rc, ec=color, fc='none'))
+        ax.add_patch(matplotlib.patches.Circle(c.rc, radius=c.Rc, ec=color, fc="none"))
         ax.plot(
-            [c.rc[0], c.rc[0] + 1.2*c.Rc*c.xihat[0]],
-            [c.rc[1], c.rc[1] + 1.2*c.Rc*c.xihat[1]],
-            ls="--", color=color,
+            [c.rc[0], c.rc[0] + 1.2 * c.Rc * c.xihat[0]],
+            [c.rc[1], c.rc[1] + 1.2 * c.Rc * c.xihat[1]],
+            ls="--",
+            color=color,
         )
         ax.scatter(c.rc[0], c.rc[1], s=30, color=color)
         print(c)
     # Draw the R_90 radii for the final fit
     # Use fact that perpendicular(x, y) = (-y, x)
     ax.plot(
-        [xs - c.R90[0]*c.xihat[1], xs + c.R90[1]*c.xihat[1]],
-        [ys + c.R90[0]*c.xihat[0], ys - c.R90[1]*c.xihat[0]],
-        ls=":", color=color,
-        )
-    
-    ax.scatter(xs, ys, s=30, color='k', zorder=2)
+        [xs - c.R90[0] * c.xihat[1], xs + c.R90[1] * c.xihat[1]],
+        [ys + c.R90[0] * c.xihat[0], ys - c.R90[1] * c.xihat[0]],
+        ls=":",
+        color=color,
+    )
+
+    ax.scatter(xs, ys, s=30, color="k", zorder=2)
 
     ra, dec = ax.coords
-    ra.set_major_formatter('hh:mm:ss.ss')
-    dec.set_major_formatter('dd:mm:ss.s')
-    ra.set_axislabel('RA (J2000)')
-    dec.set_axislabel('Dec (J2000)')
+    ra.set_major_formatter("hh:mm:ss.ss")
+    dec.set_major_formatter("dd:mm:ss.s")
+    ra.set_axislabel("RA (J2000)")
+    dec.set_axislabel("Dec (J2000)")
 
     ax.set(
-        xlim=[x1, x2],
-        ylim=[y1, y2],
+        xlim=[x1, x2], ylim=[y1, y2],
     )
     fig.savefig(plotfile)
-    plt.close(fig)              # Avoid resource leak!
+    plt.close(fig)  # Avoid resource leak!
     return plotfile
 
 
@@ -454,7 +498,7 @@ TESTCENTER = np.array([2.5, 0.5])
 
 TEST_REGION_FILE = "data/new-w000-400-ridge.reg"
 TEST_FITS_FILE = "data/w000-400-Bally_09-extract.fits"
-TEST_PLOT_FILE = 'plot-w000-400-ridge.pdf'
+TEST_PLOT_FILE = "plot-w000-400-ridge.pdf"
 
 if __name__ == "__main__":
 
@@ -462,17 +506,17 @@ if __name__ == "__main__":
         arc = str(sys.argv[1])
         TEST_REGION_FILE = TEST_REGION_FILE.replace("ridge", arc)
         TEST_PLOT_FILE = TEST_PLOT_FILE.replace("ridge", arc)
-    except:
+    except (IndexError, ValueError):
         pass
 
     try:
         DELTA_THETA = float(sys.argv[2])
-    except:
+    except (IndexError, ValueError):
         DELTA_THETA = 75.0
 
     try:
         BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = float(sys.argv[3])
-    except:
+    except (IndexError, ValueError):
         BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION = 0.5
 
     TEST_PLOT_FILE = TEST_PLOT_FILE.replace(".pdf", f"-{int(DELTA_THETA):02d}.pdf")
@@ -484,18 +528,22 @@ if __name__ == "__main__":
 
     # Test with real image and region file
     print("### Image Test")
-    print("Figure file:",
-          plot_solution(TEST_REGION_FILE, TEST_FITS_FILE, TEST_PLOT_FILE, DELTA_THETA))
+    print(
+        "Figure file:",
+        plot_solution(TEST_REGION_FILE, TEST_FITS_FILE, TEST_PLOT_FILE, DELTA_THETA),
+    )
 
     # Test the resampling
     for j in range(5):
         print(f"### Resample Test {j:01d}")
-        print("Figure file:",
-              plot_solution(
-                  TEST_REGION_FILE,
-                  TEST_FITS_FILE,
-                  TEST_PLOT_FILE.replace(".pdf", f"-resample{j:01d}.pdf"),
-                  DELTA_THETA,
-                  resample=True,
-                  resample_fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION,
-              ))
+        print(
+            "Figure file:",
+            plot_solution(
+                TEST_REGION_FILE,
+                TEST_FITS_FILE,
+                TEST_PLOT_FILE.replace(".pdf", f"-resample{j:01d}.pdf"),
+                DELTA_THETA,
+                resample=True,
+                resample_fraction=BOOTSTRAP_RESAMPLE_REPLACEMENT_FRACTION,
+            ),
+        )
